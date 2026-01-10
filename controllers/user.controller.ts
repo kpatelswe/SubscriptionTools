@@ -132,12 +132,8 @@ export const deleteUser = async (req: AuthRequest, res: Response, next: NextFunc
     }
 
     // Delete all user's subscriptions first (handled by cascade, but explicit for clarity)
-    await db.delete(subscriptions).where(eq(subscriptions.userId, req.params.id));
-
-    // Delete the user
-    await db.delete(users).where(eq(users.id, req.params.id));
-
-    res.status(200).json({ success: true, message: 'User and all associated subscriptions deleted successfully' });
+    await db.delete(subscriptions).where(eq(subscriptions.userId, req.params.id));    // Delete the user
+    await db.delete(users).where(eq(users.id, req.params.id));    res.status(200).json({ success: true, message: 'User and all associated subscriptions deleted successfully' });
   } catch (error) {
     next(error);
   }

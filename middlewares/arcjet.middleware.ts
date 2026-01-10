@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import aj from '../config/arcjet.js';
 
 const arcjetMiddleware = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // Skip Arcjet in test environment to avoid rate limiting during CI
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
+
   try {
     const decision = await aj.protect(req, { requested: 1 });
 

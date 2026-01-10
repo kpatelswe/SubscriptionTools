@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    env:
+      # These are required for the app to start during tests
+      NODE_ENV: test
+      PORT: 5001
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: test-secret-for-ci
+      JWT_EXPIRES_IN: 1d
+      ARCJET_KEY: ${{ secrets.ARCJET_KEY }}
+      ARCJET_ENV: development
+      QSTASH_URL: https://qstash.upstash.io
+      QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
+      SERVER_URL: http://localhost:5001
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: TypeScript Build Check
+      run: npm run build
+      
+    - name: Run Linter
+      run: npm run lint --if-present
+
+    - name: Run Tests with Coverage
+      run: npm run test:ci
+
+    - name: Upload Coverage Report
+      uses: codecov/codecov-action@v4
+      if: matrix.node-version == '20.x'
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run Security Audit
+      run: npm audit --audit-level=high
+      continue-on-error: true
